@@ -1,1 +1,1 @@
-# onyomitrainer
+# 楽譜音読みトレーナー
