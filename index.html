@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>楽譜音読みトレーナー</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;900&display=swap">
 <style>
 :root{--bg:#fff;--fg:#000;--dim:rgba(0,0,0,.3);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -82,7 +88,7 @@ const pcName=(pc,nm)=>{const w=WH.indexOf(pc);return w>=0?NAMES[nm][w]:NAMES[nm]
 const pcOf=o=>((WH[o.n%7]+o.acc)%12+12)%12;
 const sec=ms=>(ms/1000).toFixed(1)+'秒';
 const nms=a=>a.map(p=>pcName(p,S.nm)).join('・');
-function theme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch(e){}}
+function theme(t){document.documentElement.dataset.theme=t;const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t=='dark'?'#000000':'#ffffff';try{localStorage.setItem('th',t)}catch(e){}}
 try{theme(localStorage.getItem('th')||'light')}catch(e){theme('light')}
 
 /* ---------- 楽譜の描画 ---------- */
@@ -243,6 +249,7 @@ addEventListener('keydown',e=>{
  }else if(S.ph=='f'&&(e.key=='Enter'||e.key==' ')){e.preventDefault();next()}
 });
 showTitle();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
