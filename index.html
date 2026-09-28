@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>楽譜音読みトレーナー</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;900&display=swap">
+<style>
+:root{--bg:#fff;--fg:#000;--dim:rgba(0,0,0,.3);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme=dark]{--bg:#000;--fg:#fff;--dim:rgba(255,255,255,.3)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.6 "Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif}
+#app{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+button{font:inherit;color:inherit;background:var(--bg);border:2px solid var(--fg);padding:10px 14px;cursor:pointer;border-radius:0}
+@media(hover:hover){button:hover:not(:disabled){background:var(--fg);color:var(--bg)}}
+button:focus-visible,input:focus-visible{outline:3px solid var(--fg);outline-offset:3px}
+.on{background:var(--fg)!important;color:var(--bg)!important}
+h1{font-size:56px;line-height:1.1;font-weight:900;margin:8px 0 0;letter-spacing:.04em}
+h2{font-size:18px;font-weight:900;margin:22px 0 8px}
+.top{display:flex;justify-content:flex-end}
+.sub{margin:4px 0 0}
+.art{margin:6px 0 10px}
+.dl{display:block;width:100%;text-align:left;margin-bottom:10px;padding:12px 16px}
+.dl b{font-size:20px;font-weight:900;display:block}.dl small{font-size:13px}
+.seg{display:flex}.seg button{flex:1;margin-right:-2px;padding:10px 4px}
+.big{display:block;width:100%;font-size:20px;font-weight:900;padding:14px;margin-top:14px}
+.row{display:flex;gap:10px;margin-top:14px}.row button{flex:1}
+input[type=range]{width:100%;accent-color:var(--fg)}
+.lab{display:flex;justify-content:space-between;font-weight:900}
+.staff{width:100%;display:block;color:var(--fg)}
+.s{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round}
+.c{stroke-width:2.4;vector-effect:non-scaling-stroke}
+.f{fill:currentColor}.bg{fill:var(--bg)}
+.qh{display:flex;justify-content:space-between;font-weight:900;font-size:18px}
+.tbar{height:8px;border:1px solid var(--fg);margin:6px 0}.tbar i{display:block;height:100%;width:100%;background:var(--fg)}
+.hint{font-size:13px;text-align:center;margin:6px 0 0}
+.kb{position:relative;display:flex;height:170px;margin:12px 0 0}
+.key{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;padding:0 0 8px}
+.key.w{flex:1;margin-right:-2px}
+.key.b{position:absolute;top:0;width:9.5%;height:60%;background:var(--fg);color:var(--bg);z-index:2;padding:0 0 6px;padding-left:0;padding-right:0}
+.key.b.on{background:var(--bg)!important;color:var(--fg)!important}
+.key i{font-style:normal;font-size:13px;font-weight:900}.key b{font-size:11px;font-weight:500;opacity:.6}
+.key.off{opacity:.3;pointer-events:none}
+.kmap{display:none;margin:14px 0 0 auto;width:max-content}
+@media(min-width:600px){.kmap{display:block}}
+.kmap .r{display:flex}.kmap .r1{margin-left:20px}
+.cap{width:40px;height:40px;border:1.5px solid var(--fg);margin:0 -1.5px -1.5px 0;text-align:center;font-size:9px;line-height:1.2;padding-top:3px}
+.cap b{display:block;font-size:14px}.cap.off{opacity:.3}.cap.sp{border:0;opacity:0}
+.fb{text-align:center;margin-top:8px}
+.mark{font-size:96px;line-height:1;font-weight:900}
+.ng .mark{background:var(--fg);color:var(--bg);width:120px;margin:0 auto}
+.fb h2{margin:6px 0 0;font-size:26px}
+p{margin:6px 0}.c2{text-align:center}
+.big2{font-size:64px;font-weight:900;line-height:1.1;text-align:center;margin:16px 0 0}
+.tw{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid var(--fg);padding:6px 8px;text-align:left;white-space:nowrap}
+th{background:var(--fg);color:var(--bg)}
+tr.bad td:first-child{font-weight:900}
+.lnk{border:0;text-decoration:underline;padding:6px 0;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const $=s=>document.querySelector(s),app=$('#app');
+const pick=a=>a[Math.random()*a.length|0],ri=(a,b)=>a+(Math.random()*(b-a+1)|0);
+const S={diff:0,count:10,chord:0,nm:1,time:0,limit:10,qs:[],i:0,res:[],t0:0,tm:0,sel:new Set(),ph:''};
+const DIFF=[
+{n:'イージー',d:'ト音記号・白鍵の音のみ',cl:['treble'],acc:[0],ex:0,blk:0},
+{n:'ノーマル',d:'ト音記号・ヘ音記号・白鍵の音のみ',cl:['treble','bass'],acc:[0],ex:0,blk:0},
+{n:'ハード',d:'♯・♭の付いた音も出題',cl:['treble','bass'],acc:[0,1,-1,1,-1],ex:0,blk:1},
+{n:'エキスパート',d:'加線・重嬰記号・重変記号を含むすべて',cl:['treble','bass'],acc:[0,0,1,-1,2,-2],ex:1,blk:1}];
+const RG={treble:{n:[28,40],e:[22,46],b:30},bass:{n:[16,29],e:[10,34],b:18}};
+const WH=[0,2,4,5,7,9,11],BK=[1,3,6,8,10];
+const NAMES=[['C','D','E','F','G','A','B'],['ド','レ','ミ','ファ','ソ','ラ','シ'],['ハ','ニ','ホ','ヘ','ト','イ','ロ']];
+const NMLAB=['A〜G','ド〜シ','イ〜ト'];
+const KEYS=['KeyC','KeyF','KeyV','KeyG','KeyB','KeyN','KeyJ','KeyM','KeyK','Comma','KeyL','Period'];
+const KL=['C','F','V','G','B','N','J','M','K',',','L','.'];
+const pcName=(pc,nm)=>{const w=WH.indexOf(pc);return w>=0?NAMES[nm][w]:NAMES[nm][WH.indexOf(pc-1)]+'♯'};
+const pcOf=o=>((WH[o.n%7]+o.acc)%12+12)%12;
+const sec=ms=>(ms/1000).toFixed(1)+'秒';
+const nms=a=>a.map(p=>pcName(p,S.nm)).join('・');
+function theme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('th',t)}catch(e){}}
+try{theme(localStorage.getItem('th')||'light')}catch(e){theme('light')}
+
+/* ---------- 楽譜の描画 ---------- */
+function acc(x,y,a){
+ const f=dx=>`<path class="s" d="M${x+dx-3} ${y-17}V${y+6}M${x+dx-3} ${y+6}C${x+dx+8} ${y+2} ${x+dx+7} ${y-8} ${x+dx-3} ${y-3}"/>`;
+ if(a==1)return `<path class="s" d="M${x-3} ${y-11}V${y+13}M${x+3} ${y-13}V${y+11}"/><path class="s" style="stroke-width:3" d="M${x-6} ${y-3}L${x+6} ${y-6}M${x-6} ${y+6}L${x+6} ${y+3}"/>`;
+ if(a==-1)return f(0);
+ if(a==-2)return f(-5)+f(4);
+ return `<path class="s" style="stroke-width:2.6" d="M${x-4} ${y-4}L${x+4} ${y+4}M${x+4} ${y-4}L${x-4} ${y+4}"/>`;
+}
+function clef(c,yb){
+ if(c=='treble')return `<path class="s c" transform="translate(40 ${yb-24}) scale(12)" d="M0.2,3.4 C0.2,4.1 -0.9,4.1 -0.9,3.3 C-0.9,2.8 -0.2,2.7 0.1,3.2 L0.6,-3.6 C0.7,-4.6 1.4,-4.3 1.4,-3.5 C1.4,-2.4 -1.2,-1.2 -1.2,0.6 C-1.2,1.9 0.2,2.1 0.9,1.6 C1.6,1.0 1.3,-0.3 0.2,-0.4 C-0.5,-0.4 -0.7,0.6 0,0.9"/>`;
+ return `<g transform="translate(34 ${yb-36}) scale(12)"><circle class="f" cx="-0.2" r="0.5"/><path class="s c" d="M-0.3,0.3 C0.2,-0.9 2.4,-0.6 2.5,1.2 C2.5,2.6 1.2,3.4 -0.9,4.2"/><circle class="f" cx="3" cy="-0.5" r="0.22"/><circle class="f" cx="3" cy="0.5" r="0.22"/></g>`;
+}
+function staff(q,ex){
+ const yb=125,Y=p=>yb-p*6,bot=RG[q.cl].b,ch=q.notes.length>1,hw=8.5,x=ch?205:215;
+ const P=q.notes.map(o=>o.n-bot);
+ let s=`<svg class="staff" viewBox="0 ${ex?0:20} 340 ${ex?190:145}" role="img" aria-label="楽譜">`;
+ for(let i=0;i<5;i++)s+=`<path class="s" d="M10 ${Y(i*2)}H330"/>`;
+ const L=new Set();
+ P.forEach(p=>{if(p<0)for(let l=-2;l>=p;l-=2)L.add(l);if(p>8)for(let l=10;l<=p;l+=2)L.add(l)});
+ L.forEach(l=>s+=`<path class="s" d="M${x-17} ${Y(l)}H${x+(ch?38:17)}"/>`);
+ s+=clef(q.cl,yb);
+ const off=[];P.forEach((p,i)=>off.push(i>0&&p-P[i-1]==1&&!off[i-1]));
+ if(ch)s+=`<path class="s" style="stroke-width:1.8" d="M${x+hw-1} ${Y(P[0])}V${Y(P[P.length-1])-36}"/>`;
+ q.notes.forEach((o,i)=>{
+  const cx=x+(off[i]?2*hw-2:0),cy=Y(P[i]);
+  s+=ch?`<ellipse class="f" cx="${cx}" cy="${cy}" rx="8.5" ry="5.8" transform="rotate(-20 ${cx} ${cy})"/>`
+   :`<ellipse class="f" cx="${cx}" cy="${cy}" rx="10.5" ry="6.2"/><ellipse class="bg" cx="${cx}" cy="${cy}" rx="4.2" ry="6.6" transform="rotate(-35 ${cx} ${cy})"/>`;
+ });
+ let c=0;
+ [...q.notes.keys()].reverse().forEach(i=>{const a=q.notes[i].acc;if(!a)return;s+=acc(x-(ch?22:20)-(c%3)*15,Y(P[i]),a);c++});
+ return s+'</svg>';
+}
+
+/* ---------- 出題 ---------- */
+function genQ(){
+ const D=DIFF[S.diff],cl=pick(D.cl),R=RG[cl],r=D.ex?R.e:R.n,k=S.chord?pick([2,3]):1;
+ const lo=k>1?ri(r[0],r[1]-6):r[0],hi=k>1?lo+6:r[1];
+ for(;;){
+  const notes=[];
+  while(notes.length<k){const n=ri(lo,hi);if(!notes.some(o=>o.n==n))notes.push({n,acc:pick(D.acc)})}
+  notes.sort((a,b)=>a.n-b.n);
+  const pcs=notes.map(pcOf);
+  if(new Set(pcs).size==k)return{cl,notes,pcs};
+ }
+}
+const enabled=pc=>DIFF[S.diff].blk||!BK.includes(pc);
+function key(pc,t,i){
+ const st=t=='b'?` style="left:calc(${(i+1)/7*100}% - 4.75%)"`:'';
+ return `<button class="key ${t}${enabled(pc)?'':' off'}" data-act="key:${pc}" data-pc="${pc}"${st}><i>${pcName(pc,S.nm)}</i><b>${KL[pc]}</b></button>`;
+}
+const cap=pc=>`<div class="cap${enabled(pc)?'':' off'}"><b>${KL[pc]}</b>${pcName(pc,S.nm)}</div>`;
+
+/* ---------- 画面 ---------- */
+function render(h){app.innerHTML=h;if(document.activeElement)document.activeElement.blur();window.scrollTo(0,0)}
+function showTitle(){
+ S.ph='t';clearInterval(S.tm);
+ const dark=document.documentElement.dataset.theme=='dark';
+ render(`<div class="top"><button data-act="theme">${dark?'ホワイトモード':'ダークモード'}にする</button></div>
+ <h1>楽譜<br>音読み</h1><p class="sub">五線の音を、鍵盤で答えよう。</p>
+ <div class="art">${staff({cl:'treble',notes:[{n:34,acc:0}]},0)}</div>
+ ${DIFF.map((d,i)=>`<button class="dl" data-act="diff:${i}"><b>${d.n}</b><small>${d.d}</small></button>`).join('')}`);
+}
+function seg(act,opts,cur){return `<div class="seg">${opts.map((o,i)=>`<button class="${i==cur?'on':''}" data-act="${act}:${i}">${o}</button>`).join('')}</div>`}
+function showSet(){
+ S.ph='s';
+ render(`<h1 style="font-size:32px">詳細設定</h1><p class="sub">${DIFF[S.diff].n}</p>
+ <h2 class="lab"><span>問題数</span><span id="cv">${S.count}問</span></h2>
+ <input type="range" id="cnt" min="5" max="50" step="1" value="${S.count}" aria-label="問題数">
+ <h2>和音</h2>${seg('chord',['オフ(単音)','オン(和音)'],S.chord)}
+ <h2>音名の表記</h2>${seg('nm',NMLAB,S.nm)}
+ <h2>回答時間</h2>${seg('time',['なし','あり(制限あり)','あり(計測のみ)'],S.time)}
+ ${S.time==1?`<h2 class="lab"><span>1問の制限時間</span><span id="lv">${S.limit}秒</span></h2><input type="range" id="lim" min="3" max="60" step="1" value="${S.limit}" aria-label="制限時間">`:''}
+ <div class="row"><button data-act="title">戻る</button><button data-act="start">スタート</button></div>`);
+}
+function start(){S.qs=Array.from({length:S.count},genQ);S.i=0;S.res=[];showQ()}
+function showQ(){
+ const q=S.qs[S.i];S.ph='q';S.sel=new Set();
+ render(`<div class="qh"><span>${S.i+1} / ${S.qs.length}</span><span id="tt">${S.time==1?S.limit+'.0秒':''}</span></div>
+ ${S.time==1?'<div class="tbar"><i></i></div>':''}
+ ${staff(q,DIFF[S.diff].ex)}
+ ${S.chord?'<p class="hint">和音です。鳴っているすべての音を選んで「決定」を押してください。</p>':''}
+ <div class="kb">${WH.map((p,i)=>key(p,'w',i)).join('')}${BK.map(p=>key(p,'b',WH.indexOf(p-1))).join('')}</div>
+ ${S.chord?'<button class="big" data-act="ok">決定(Enter)</button>':''}
+ <div class="kmap" aria-hidden="true"><div class="r r1">${cap(1)}${cap(3)}<div class="cap sp"></div>${cap(6)}${cap(8)}${cap(10)}</div><div class="r">${WH.map(cap).join('')}</div></div>
+ <button class="lnk" data-act="title">タイトルへ戻る</button>`);
+ S.t0=performance.now();clearInterval(S.tm);
+ if(!S.time)return;
+ const tt=$('#tt'),bar=$('.tbar i');
+ S.tm=setInterval(()=>{
+  const e=performance.now()-S.t0;
+  if(S.time==1){const r=S.limit*1000-e;if(r<=0){finish([],1);return}tt.textContent=sec(r);bar.style.width=r/(S.limit*10)+'%'}
+  else tt.textContent=sec(e);
+ },50);
+}
+function press(pc){
+ if(S.ph!='q'||!enabled(pc))return;
+ if(document.activeElement)document.activeElement.blur();
+ if(!S.chord){finish([pc]);return}
+ S.sel.has(pc)?S.sel.delete(pc):S.sel.add(pc);
+ document.querySelectorAll('.key').forEach(k=>k.classList.toggle('on',S.sel.has(+k.dataset.pc)));
+}
+function submit(){if(S.ph=='q'&&S.chord&&S.sel.size)finish([...S.sel])}
+function finish(ans,to){
+ clearInterval(S.tm);
+ const ms=Math.min(performance.now()-S.t0,S.time==1?S.limit*1000:1e9),q=S.qs[S.i];
+ const ok=!to&&ans.length==q.pcs.length&&ans.every(a=>q.pcs.includes(a));
+ S.res.push({q,ans,ok,to:!!to,ms});showF();
+}
+function showF(){
+ S.ph='f';
+ const r=S.res[S.i],q=r.q,last=S.i+1>=S.qs.length;
+ render(`<div class="fb ${r.ok?'ok':'ng'}"><div class="mark">${r.ok?'○':'×'}</div><h2>${r.ok?'正解!':r.to?'時間切れ':'不正解'}</h2></div>
+ ${staff(q,DIFF[S.diff].ex)}
+ <p class="c2">正解:<b> ${nms(q.pcs)}</b></p>
+ ${r.ok?'':`<p class="c2">あなたの答え: ${r.ans.length?nms(r.ans):'なし'}</p>`}
+ ${S.time?`<p class="c2">回答時間: ${sec(r.ms)}</p>`:''}
+ <button class="big on" data-act="next">${last?'結果を見る':'次の問題へ'}</button><p class="hint">Enter / Space キーでも進めます</p>`);
+}
+function next(){S.i++;S.i>=S.qs.length?showR():showQ()}
+function showR(){
+ S.ph='r';
+ const n=S.res.length,ok=S.res.filter(r=>r.ok).length,tot=S.res.reduce((a,r)=>a+r.ms,0),T=S.time>0;
+ render(`<h1 style="font-size:32px">最終結果</h1>
+ <p class="big2">${ok} / ${n}</p><p class="c2">正答率 ${Math.round(ok/n*100)}%</p>
+ ${T?`<p class="c2">合計 ${sec(tot)}　平均 ${sec(tot/n)} / 問</p>`:''}
+ <div class="tw"><table><tr><th>問</th><th>音部記号</th><th>正解</th><th>あなたの答え</th>${T?'<th>時間</th>':''}</tr>
+ ${S.res.map((r,i)=>`<tr class="${r.ok?'':'bad'}"><td>${r.ok?'○':'×'} ${i+1}</td><td>${r.q.cl=='treble'?'ト音':'ヘ音'}</td><td>${nms(r.q.pcs)}</td><td>${r.ans.length?nms(r.ans):(r.to?'時間切れ':'-')}</td>${T?`<td>${sec(r.ms)}</td>`:''}</tr>`).join('')}</table></div>
+ <div class="row"><button data-act="title">タイトルへ</button><button data-act="start">もう一度</button></div>`);
+}
+
+/* ---------- イベント ---------- */
+app.addEventListener('click',e=>{
+ const b=e.target.closest('[data-act]');if(!b)return;
+ const[a,v]=b.dataset.act.split(':');
+ if(a=='theme'){theme(document.documentElement.dataset.theme=='dark'?'light':'dark');showTitle()}
+ else if(a=='diff'){S.diff=+v;showSet()}
+ else if(a=='chord'){S.chord=+v;showSet()}
+ else if(a=='nm'){S.nm=+v;showSet()}
+ else if(a=='time'){S.time=+v;showSet()}
+ else if(a=='start')start();
+ else if(a=='title')showTitle();
+ else if(a=='key')press(+v);
+ else if(a=='ok')submit();
+ else if(a=='next')next();
+});
+app.addEventListener('input',e=>{
+ if(e.target.id=='cnt'){S.count=+e.target.value;$('#cv').textContent=S.count+'問'}
+ if(e.target.id=='lim'){S.limit=+e.target.value;$('#lv').textContent=S.limit+'秒'}
+});
+addEventListener('keydown',e=>{
+ if(e.repeat||e.metaKey||e.ctrlKey||e.altKey)return;
+ if(S.ph=='q'){
+  const pc=KEYS.indexOf(e.code);
+  if(pc>=0){e.preventDefault();press(pc)}
+  else if(e.key=='Enter'){e.preventDefault();submit()}
+ }else if(S.ph=='f'&&(e.key=='Enter'||e.key==' ')){e.preventDefault();next()}
+});
+showTitle();
+</script>
+</body>
+</html>
