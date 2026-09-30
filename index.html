@@ -76,7 +76,7 @@ const $=s=>document.querySelector(s),app=$('#app');
 const pick=a=>a[Math.random()*a.length|0],ri=(a,b)=>a+(Math.random()*(b-a+1)|0);
 const S={diff:0,clef:0,count:10,chord:0,nm:1,time:0,limit:10,qs:[],i:0,res:[],t0:0,tm:0,sel:new Set(),ph:'',hint:0};
 const DIFF=[
-{n:'イージー',d:'白鍵の音のみ(音部記号は下で選択)',acc:[0],ex:0,blk:0,dc:0},
+{n:'イージー',d:'ト音記号・白鍵の音のみ',acc:[0],ex:0,blk:0,dc:0,fixCl:1},
 {n:'ノーマル',d:'ト音・ヘ音記号、白鍵の音のみ',acc:[0],ex:0,blk:0,dc:2},
 {n:'ハード',d:'♯・♭の付いた音も出題',acc:[0,1,-1,1,-1],ex:0,blk:1,dc:2},
 {n:'エキスパート',d:'加線・重嬰記号・重変記号を含むすべて',acc:[0,0,1,-1,2,-2],ex:1,blk:1,dc:2}];
@@ -111,7 +111,7 @@ function guide(cl){
  let s=`<svg class="staff" viewBox="0 20 340 145" role="img" aria-label="五線の音名ガイド">`;
  for(let i=0;i<5;i++)s+=`<path class="s" d="M10 ${Y(i*2)}H330"/>`;
  s+=clef(cl,yb);
- for(let p=0;p<=8;p++){
+ for(let p=0;p<=8;p+=2){
   const nm=pcName(pcOf({n:bot+p,acc:0}),S.nm);
   s+=`<circle class="f" cx="230" cy="${Y(p)}" r="3.5"/><text x="245" y="${Y(p)+4}" font-size="13" font-weight="900" fill="currentColor">${nm}</text>`;
  }
@@ -171,9 +171,9 @@ function seg(act,opts,cur){return `<div class="seg">${opts.map((o,i)=>`<button c
 function showSet(){
  S.ph='s';
  render(`<h1 style="font-size:32px">詳細設定</h1><p class="sub">${DIFF[S.diff].n}</p>
- <h2>音部記号</h2>${seg('clef',['ト音のみ','ヘ音のみ','両方'],S.clef)}
  <h2 class="lab"><span>問題数</span><span id="cv">${S.count}問</span></h2>
  <input type="range" id="cnt" min="5" max="50" step="1" value="${S.count}" aria-label="問題数">
+ ${DIFF[S.diff].fixCl?'':`<h2>音部記号</h2>${seg('clef',['ト音のみ','ヘ音のみ','両方'],S.clef)}`}
  <h2>和音</h2>${seg('chord',['オフ(単音)','オン(和音)'],S.chord)}
  <h2>音名の表記</h2>${seg('nm',NMLAB,S.nm)}
  <h2>回答時間</h2>${seg('time',['なし','あり(制限あり)','あり(計測のみ)'],S.time)}
