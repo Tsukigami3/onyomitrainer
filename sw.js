@@ -1,10 +1,10 @@
-const CACHE = 'gakufu-v1'; // 更新したらここの番号を上げる
+const CACHE = 'gakufu-v2'; // 更新したらここの番号を上げる
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
-
+ 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
-
+ 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -12,7 +12,7 @@ self.addEventListener('activate', e => {
       .then(() => self.clients.claim())
   );
 });
-
+ 
 // キャッシュがあればすぐ表示し、裏で最新版を取得して次回に反映する
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
